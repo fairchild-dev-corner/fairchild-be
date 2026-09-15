@@ -1,0 +1,26 @@
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.claude
+google-auth.json
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go build command
+bin/
+
+# Code coverage profiles and other test artifacts
+*.out
+*.coverprofile
+profile.cov
+
+# Go workspace file
+go.work
+go.work.sum
+
+# Environment files (secrets)
+.env

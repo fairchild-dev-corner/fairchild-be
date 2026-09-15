@@ -1,0 +1,9 @@
+ALTER TABLE users
+	DROP KEY uq_users_badge_number_id,
+	DROP COLUMN first_name,
+	DROP COLUMN last_name,
+	DROP COLUMN badge_number_id,
+	DROP COLUMN date_of_birth,
+	DROP COLUMN gender,
+	DROP COLUMN mobile_number,
+	DROP COLUMN location;
