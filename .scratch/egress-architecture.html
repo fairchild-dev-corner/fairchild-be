@@ -1,0 +1,343 @@
+<title>Fairchild Egress Architecture</title>
+<style>
+  :root{
+    --bg:#f2f5f0;
+    --surface:#ffffff;
+    --surface-alt:#e7ebe2;
+    --ink:#151a16;
+    --muted:#5c665c;
+    --line:#ccd3c6;
+    --accent-data:#1f7a6c;
+    --accent-deploy:#9a5b12;
+    --accent-cost:#a4321d;
+    --font-mono:'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+    --font-sans:'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#10150e;
+      --surface:#171f17;
+      --surface-alt:#1d261d;
+      --ink:#edf2ea;
+      --muted:#93a08d;
+      --line:#2b352a;
+      --accent-data:#4fb8a4;
+      --accent-deploy:#d99a3d;
+      --accent-cost:#e0725a;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#10150e;
+    --surface:#171f17;
+    --surface-alt:#1d261d;
+    --ink:#edf2ea;
+    --muted:#93a08d;
+    --line:#2b352a;
+    --accent-data:#4fb8a4;
+    --accent-deploy:#d99a3d;
+    --accent-cost:#e0725a;
+  }
+
+  *{ box-sizing:border-box; }
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:var(--font-sans);
+    padding-inline:20px;
+    padding-block:52px;
+  }
+  main{
+    max-width:920px;
+    margin:0 auto;
+    display:flex;
+    flex-direction:column;
+    gap:52px;
+  }
+
+  .eyebrow{
+    font-family:var(--font-mono);
+    font-size:11px;
+    font-weight:600;
+    letter-spacing:.12em;
+    text-transform:uppercase;
+    color:var(--muted);
+    margin:0 0 10px;
+  }
+  h1{
+    font-family:var(--font-mono);
+    font-size:clamp(26px,4vw,34px);
+    font-weight:600;
+    letter-spacing:-.01em;
+    line-height:1.15;
+    margin:0 0 16px;
+    text-wrap:balance;
+  }
+  .lede{
+    font-size:15.5px;
+    line-height:1.65;
+    color:var(--ink);
+    max-width:66ch;
+    margin:0;
+  }
+  .lede + .lede{ margin-top:12px; color:var(--muted); }
+
+  section{ display:flex; flex-direction:column; gap:14px; }
+  h2{
+    font-family:var(--font-mono);
+    font-size:13px;
+    font-weight:600;
+    letter-spacing:.06em;
+    text-transform:uppercase;
+    color:var(--muted);
+    margin:0;
+    padding-bottom:10px;
+    border-bottom:1px solid var(--line);
+  }
+
+  figure{ margin:0; display:flex; flex-direction:column; gap:12px; }
+  .diagram-scroll{
+    overflow-x:auto;
+    border:1px solid var(--line);
+    border-radius:10px;
+    background:var(--surface);
+    padding:4px;
+  }
+  .diagram-scroll svg{ display:block; height:auto; }
+  figcaption{
+    font-size:13.5px;
+    line-height:1.55;
+    color:var(--muted);
+    max-width:74ch;
+  }
+  figcaption b{ color:var(--ink); font-weight:600; }
+
+  .node rect{ fill:var(--surface); stroke:var(--line); stroke-width:1.5; }
+  .node .title{ font-family:var(--font-mono); font-size:12.5px; font-weight:600; fill:var(--ink); text-anchor:middle; }
+  .node .sub{ font-family:var(--font-sans); font-size:10.5px; fill:var(--muted); text-anchor:middle; }
+  .node.hub rect{ fill:var(--surface-alt); stroke:var(--ink); stroke-width:1.75; }
+
+  .lane-data{ stroke:var(--accent-data); stroke-width:2; fill:none; }
+  .lane-data-label{ font-family:var(--font-mono); font-size:11px; fill:var(--accent-data); text-anchor:middle; }
+  .lane-deploy{ stroke:var(--accent-deploy); stroke-width:1.75; fill:none; }
+  .lane-deploy-label{ font-family:var(--font-mono); font-size:10.5px; fill:var(--accent-deploy); text-anchor:middle; }
+  .boundary{ stroke:var(--accent-cost); stroke-width:1.5; stroke-dasharray:5 4; }
+
+  .chain{ stroke:var(--muted); stroke-width:1.5; fill:none; }
+  .cost{ font-family:var(--font-mono); font-size:12px; font-weight:600; fill:var(--accent-cost); text-anchor:middle; }
+  .col-label{ font-family:var(--font-mono); font-size:11px; font-weight:600; letter-spacing:.08em; fill:var(--muted); text-anchor:middle; }
+  .divider{ stroke:var(--line); stroke-width:1.5; }
+  .note{ font-family:var(--font-sans); font-size:11px; fill:var(--muted); text-anchor:middle; }
+  .total-box rect{ fill:var(--surface-alt); stroke:var(--accent-cost); stroke-width:1.5; }
+  .total-box text{ font-family:var(--font-mono); font-size:13px; font-weight:600; fill:var(--accent-cost); text-anchor:middle; }
+  .hero-box rect{ fill:var(--surface-alt); stroke:var(--accent-data); stroke-width:1.5; }
+
+  .callout{
+    border:1px solid var(--line);
+    border-left:3px solid var(--accent-cost);
+    border-radius:8px;
+    background:var(--surface);
+    padding:18px 20px;
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+  }
+  .callout .label{
+    font-family:var(--font-mono);
+    font-size:11px;
+    font-weight:600;
+    letter-spacing:.1em;
+    text-transform:uppercase;
+    color:var(--accent-cost);
+  }
+  .callout p{ margin:0; font-size:14px; line-height:1.6; color:var(--ink); }
+  .callout p b{ font-variant-numeric:tabular-nums; }
+
+  footer{
+    font-family:var(--font-mono);
+    font-size:11px;
+    color:var(--muted);
+    border-top:1px solid var(--line);
+    padding-top:16px;
+  }
+</style>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+
+<main>
+
+  <header>
+    <p class="eyebrow">Architecture note · staging deploy</p>
+    <h1>Fairchild Egress Architecture</h1>
+    <p class="lede">DigitalOcean's Trusted Sources firewall drops connections from IPs it doesn't recognize — silently, which is why the staging binary sat retrying for five minutes before failing with a plain connection timeout. Railway's egress IP is dynamic, so there's nothing stable to add to that allowlist.</p>
+    <p class="lede">Moving to Cloud Run fixes that, but not for free: GCP has no single "static IP" toggle. The guarantee has to be assembled from four separate billed components sitting between Cloud Run and the internet. Below is the path a request actually takes, and what that assembly costs next to Railway's version of the same guarantee.</p>
+  </header>
+
+  <section>
+    <h2>Request &amp; deploy path</h2>
+    <figure>
+      <div class="diagram-scroll">
+        <svg viewBox="0 0 1340 246" role="img" aria-label="A client request flows from Cloud Run through a Serverless VPC Connector and Cloud NAT, crosses the public internet with a static source IP, and is checked against DigitalOcean's Trusted Sources allowlist before reaching Managed MySQL over TLS. Secret Manager and Artifact Registry feed into Cloud Run at deploy time.">
+          <defs>
+            <marker id="ah-data" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto">
+              <path d="M0,0 L8,4 L0,8 Z" fill="var(--accent-data)"/>
+            </marker>
+            <marker id="ah-deploy" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto">
+              <path d="M0,0 L8,4 L0,8 Z" fill="var(--accent-deploy)"/>
+            </marker>
+          </defs>
+
+          <!-- inset: deploy-time inputs -->
+          <g class="node">
+            <rect x="60" y="16" width="190" height="50" rx="6"/>
+            <text class="title" x="155" y="37">Secret Manager</text>
+            <text class="sub" x="155" y="53">DB pass · CA cert · JWT</text>
+          </g>
+          <g class="node">
+            <rect x="270" y="16" width="230" height="50" rx="6"/>
+            <text class="title" x="385" y="37">Artifact Registry</text>
+            <text class="sub" x="385" y="53">image, built by Cloud Build</text>
+          </g>
+          <path class="lane-deploy" d="M155,66 C170,100 210,120 245,150" marker-end="url(#ah-deploy)"/>
+          <path class="lane-deploy" d="M385,66 C370,100 320,120 270,150" marker-end="url(#ah-deploy)"/>
+          <text class="lane-deploy-label" x="205" y="102">secrets</text>
+          <text class="lane-deploy-label" x="345" y="102">image</text>
+
+          <!-- main row -->
+          <g class="node hub">
+            <rect x="160" y="150" width="190" height="64" rx="6"/>
+            <text class="title" x="255" y="176">Cloud Run</text>
+            <text class="sub" x="255" y="193">fairchild_be</text>
+          </g>
+
+          <g class="node">
+            <rect x="20" y="150" width="110" height="64" rx="6"/>
+            <text class="title" x="75" y="176">Client</text>
+            <text class="sub" x="75" y="193">browser / app</text>
+          </g>
+
+          <g class="node">
+            <rect x="380" y="150" width="190" height="64" rx="6"/>
+            <text class="title" x="475" y="176">VPC Connector</text>
+            <text class="sub" x="475" y="193">min. 2 instances</text>
+          </g>
+
+          <g class="node">
+            <rect x="600" y="150" width="190" height="64" rx="6"/>
+            <text class="title" x="695" y="176">Cloud NAT</text>
+            <text class="sub" x="695" y="193">holds the static IP</text>
+          </g>
+
+          <line class="boundary" x1="820" y1="130" x2="820" y2="234"/>
+
+          <g class="node">
+            <rect x="850" y="150" width="210" height="64" rx="6"/>
+            <text class="title" x="955" y="176">DigitalOcean</text>
+            <text class="sub" x="955" y="193">Trusted Sources check</text>
+          </g>
+
+          <g class="node">
+            <rect x="1090" y="150" width="210" height="64" rx="6"/>
+            <text class="title" x="1195" y="176">Managed MySQL</text>
+            <text class="sub" x="1195" y="193">port 25060</text>
+          </g>
+
+          <!-- main row arrows -->
+          <line class="lane-data" x1="130" y1="182" x2="158" y2="182" marker-end="url(#ah-data)"/>
+          <text class="lane-data-label" x="145" y="138">HTTPS request</text>
+
+          <line class="lane-data" x1="350" y1="182" x2="378" y2="182" marker-end="url(#ah-data)"/>
+          <text class="lane-data-label" x="365" y="138">routes egress</text>
+
+          <line class="lane-data" x1="570" y1="182" x2="598" y2="182" marker-end="url(#ah-data)"/>
+          <text class="lane-data-label" x="585" y="138">via connector</text>
+
+          <line class="lane-data" x1="790" y1="182" x2="848" y2="182" marker-end="url(#ah-data)"/>
+          <text class="lane-data-label" x="820" y="138">crosses public internet</text>
+
+          <line class="lane-data" x1="1060" y1="182" x2="1088" y2="182" marker-end="url(#ah-data)"/>
+          <text class="lane-data-label" x="1075" y="138">match → TLS</text>
+        </svg>
+      </div>
+      <figcaption><b>Fig. 1</b> — the runtime path from a client request to the database, plus the two deploy-time inputs that put a Cloud Run revision in place. The dashed line is the firewall boundary: DigitalOcean checks the arriving packet's source IP against Trusted Sources and drops it silently if it doesn't match — no refusal, just a hang until timeout, which is exactly the failure mode we saw.</figcaption>
+    </figure>
+  </section>
+
+  <section>
+    <h2>The static-egress tax</h2>
+    <figure>
+      <div class="diagram-scroll">
+        <svg viewBox="0 0 1080 430" role="img" aria-label="Comparison: Railway provides a whitelistable static egress IP as a single toggle at no extra cost on the Pro plan. On Google Cloud, the same guarantee requires chaining a VPC network, Cloud Router, Cloud NAT, a reserved static IP, and a Serverless VPC Connector, totaling roughly forty eight to fifty one dollars per month in fixed cost.">
+          <defs>
+            <marker id="ah-chain" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto">
+              <path d="M0,0 L8,4 L0,8 Z" fill="var(--muted)"/>
+            </marker>
+          </defs>
+
+          <text class="col-label" x="260" y="24">RAILWAY · PRO PLAN</text>
+          <text class="col-label" x="820" y="24">GOOGLE CLOUD · SELF-MANAGED</text>
+          <line class="divider" x1="540" y1="14" x2="540" y2="416"/>
+
+          <!-- left: single box -->
+          <g class="node hero-box">
+            <rect x="90" y="128" width="340" height="130" rx="8"/>
+            <text class="title" x="260" y="164">Static Outbound IPs</text>
+            <text class="sub" x="260" y="186">Settings → Networking → toggle</text>
+            <text class="sub" x="260" y="204">3 IPs, load-balanced</text>
+            <text class="cost" x="260" y="230">$0 extra — included</text>
+          </g>
+          <text class="note" x="260" y="290">— one toggle, one redeploy —</text>
+
+          <!-- right: chained boxes -->
+          <g class="node">
+            <rect x="650" y="40" width="340" height="50" rx="6"/>
+            <text class="title" x="820" y="61">VPC network</text>
+            <text class="cost" x="880" y="73" text-anchor="end">$0</text>
+          </g>
+          <line class="chain" x1="820" y1="90" x2="820" y2="102" marker-end="url(#ah-chain)"/>
+
+          <g class="node">
+            <rect x="650" y="104" width="340" height="50" rx="6"/>
+            <text class="title" x="820" y="125">Cloud Router</text>
+            <text class="cost" x="880" y="137" text-anchor="end">$0</text>
+          </g>
+          <line class="chain" x1="820" y1="154" x2="820" y2="166" marker-end="url(#ah-chain)"/>
+
+          <g class="node">
+            <rect x="650" y="168" width="340" height="50" rx="6"/>
+            <text class="title" x="800" y="189">Cloud NAT gateway</text>
+            <text class="cost" x="960" y="201" text-anchor="end">≈$32/mo capped</text>
+          </g>
+          <line class="chain" x1="820" y1="218" x2="820" y2="230" marker-end="url(#ah-chain)"/>
+
+          <g class="node">
+            <rect x="650" y="232" width="340" height="50" rx="6"/>
+            <text class="title" x="780" y="253">Static IP (on the NAT)</text>
+            <text class="cost" x="960" y="265" text-anchor="end">≈$3.65/mo</text>
+          </g>
+          <line class="chain" x1="820" y1="282" x2="820" y2="294" marker-end="url(#ah-chain)"/>
+
+          <g class="node">
+            <rect x="650" y="296" width="340" height="50" rx="6"/>
+            <text class="title" x="770" y="317">Serverless VPC Connector</text>
+            <text class="cost" x="960" y="329" text-anchor="end">≈$12–15/mo</text>
+          </g>
+
+          <g class="total-box">
+            <rect x="650" y="364" width="340" height="46" rx="6"/>
+            <text x="820" y="392">≈ $48–51/mo fixed + $0.045/GiB</text>
+          </g>
+        </svg>
+      </div>
+      <figcaption><b>Fig. 2</b> — what a whitelistable egress IP costs on each platform. Railway bundles it into one dashboard toggle already covered by the Pro plan. GCP has no equivalent primitive: the same guarantee is assembled from five billed pieces, four of which run whether or not the app ever calls the database.</figcaption>
+    </figure>
+  </section>
+
+  <div class="callout">
+    <p class="label">Recommendation</p>
+    <p>For a low-traffic staging service, Cloud Run, Secret Manager, and Artifact Registry all stay within their free tiers on their own — the entire added cost above is the static-egress plumbing, not the app. Weigh <b>≈$50/mo</b> of standing GCP infrastructure against either re-enabling Railway's static IP toggle, or temporarily opening DigitalOcean's Trusted Sources to <b>0.0.0.0/0</b> and leaning on TLS + credentials as the actual gate — cheaper, but worth revisiting before this becomes the production path.</p>
+  </div>
+
+  <footer>fairchild_be · staging deploy · egress path to DigitalOcean Managed MySQL</footer>
+
+</main>

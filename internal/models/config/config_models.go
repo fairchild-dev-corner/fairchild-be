@@ -12,9 +12,13 @@ type MySQLConfig struct {
 	Password string
 	DBName   string
 	BuildEnv string
+	// CACert is the PEM-encoded CA certificate used to verify the server's
+	// TLS certificate (e.g. DigitalOcean managed MySQL). Empty means connect
+	// over plaintext TCP (e.g. local dev).
+	CACert string
 }
 
-func NewMySQLConfig(host, port, user, password, dbName, buildEnv string) *MySQLConfig {
+func NewMySQLConfig(host, port, user, password, dbName, buildEnv, caCert string) *MySQLConfig {
 	return &MySQLConfig{
 		Host:     host,
 		Port:     port,
@@ -22,6 +26,7 @@ func NewMySQLConfig(host, port, user, password, dbName, buildEnv string) *MySQLC
 		Password: password,
 		DBName:   dbName,
 		BuildEnv: buildEnv,
+		CACert:   caCert,
 	}
 }
 

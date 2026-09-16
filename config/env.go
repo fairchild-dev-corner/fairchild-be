@@ -24,6 +24,9 @@ type Config struct {
 	MySQLStagUser      string
 	MySQLStagPassword  string
 	MySQLStagDBName    string
+	// MySQLStagCACert is the PEM-encoded CA certificate for verifying the
+	// staging MySQL server's TLS cert (e.g. DigitalOcean managed MySQL).
+	MySQLStagCACert string
 
 	// Legacy MySQL (read-only source for one-off cmd/migrate_legacy_* tools)
 	LegacyMySQLHost     string
@@ -89,6 +92,7 @@ func initConfig() Config {
 		MySQLStagUser:      getEnv("MYSQL_STAG_USER", os.Getenv("MYSQL_STAG_USER")),
 		MySQLStagPassword:  getEnv("MYSQL_STAG_PASSWORD", os.Getenv("MYSQL_STAG_PASSWORD")),
 		MySQLStagDBName:    getEnv("MYSQL_STAG_DB_NAME", os.Getenv("MYSQL_STAG_DB_NAME")),
+		MySQLStagCACert:    getEnv("MYSQL_STAG_CA_CERT", os.Getenv("MYSQL_STAG_CA_CERT")),
 
 		LegacyMySQLHost:     getEnv("LEGACY_MYSQL_HOST", os.Getenv("LEGACY_MYSQL_HOST")),
 		LegacyMySQLPort:     getEnv("LEGACY_MYSQL_PORT", os.Getenv("LEGACY_MYSQL_PORT")),

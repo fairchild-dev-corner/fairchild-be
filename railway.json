@@ -1,0 +1,8 @@
+{
+  "build": {
+    "command": "go build -o fairchild_be ./cmd/main.go && chmod +x fairchild_be"
+  },
+  "start": {
+    "command": "./fairchild_be"
+  }
+}

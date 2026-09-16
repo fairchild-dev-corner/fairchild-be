@@ -21,6 +21,7 @@ func GetMySQLConfig(env string) (*models.MySQLConfig, error) {
 			Envs.MySQLLocalPassword,
 			Envs.MySQLLocalDBName,
 			env,
+			"",
 		), nil
 
 	case "stage":
@@ -31,6 +32,7 @@ func GetMySQLConfig(env string) (*models.MySQLConfig, error) {
 			Envs.MySQLStagPassword,
 			Envs.MySQLStagDBName,
 			env,
+			Envs.MySQLStagCACert,
 		), nil
 
 	default:
@@ -53,6 +55,7 @@ func GetLegacyMySQLConfig() (*models.MySQLConfig, error) {
 		Envs.LegacyMySQLPassword,
 		Envs.LegacyMySQLDBName,
 		"legacy",
+		"",
 	), nil
 }
 
