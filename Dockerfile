@@ -1,5 +1,5 @@
 # Use the official Go image with Alpine for a small footprint
-FROM golang:1.23-alpine
+FROM golang:1.26-alpine
 
 # Install make
 RUN apk add --no-cache make
