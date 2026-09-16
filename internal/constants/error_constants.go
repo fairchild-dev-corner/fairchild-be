@@ -21,6 +21,8 @@ const (
 	INVALID_MOBILE_NUMBER        = "Mobile number is invalid"
 	ACCOUNT_SUSPENDED            = "This account has been suspended. Please contact support"
 	YOUNG_SAVER_MUST_BE_MINOR    = "Young Saver accounts are only for dependents under 18 years old"
+	INCORRECT_PASSWORD           = "Current password is incorrect"
+	NO_PASSWORD_SET              = "This account has no password set - sign in with social login instead"
 
 	// Statement of Account
 	SOA_STATEMENT_NOT_FOUND = "statement not found"
@@ -75,3 +77,13 @@ var ErrYoungSaverMustBeMinor = errors.New(YOUNG_SAVER_MUST_BE_MINOR)
 // all - both cases collapse to the same 404 so a foreign ctrl_no can't be
 // probed to determine whether it's valid (IDOR-safe).
 var ErrSOAStatementNotFound = errors.New(SOA_STATEMENT_NOT_FOUND)
+
+// ErrIncorrectPassword is the sentinel error returned by
+// AuthService.ChangePasswordService when CurrentPassword doesn't match the
+// account's stored hash.
+var ErrIncorrectPassword = errors.New(INCORRECT_PASSWORD)
+
+// ErrNoPasswordSet is the sentinel error returned by
+// AuthService.ChangePasswordService for a social/SSO-only account (no
+// PasswordHash) - there is nothing to verify CurrentPassword against.
+var ErrNoPasswordSet = errors.New(NO_PASSWORD_SET)

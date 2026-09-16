@@ -31,6 +31,12 @@ type ForgotPasswordOTPChallengeResponse struct {
 	MaskedMobile string `json:"masked_mobile"`
 }
 
+// SettingsResponse - GET/PATCH /auth/settings.
+type SettingsResponse struct {
+	Address              *string `json:"address"`
+	NotificationsEnabled bool    `json:"notifications_enabled"`
+}
+
 // RegisterOTPChallengeResponse is returned by SendRegisterOTPRequest - the
 // client must follow up with VerifyOTPRequest using ReferenceID, then
 // complete registration (RegisterRequest or RegisterYoungSaverRequest) using

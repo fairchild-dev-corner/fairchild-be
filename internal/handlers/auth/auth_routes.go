@@ -59,6 +59,9 @@ func (h *AuthHandler) RegisterRoutes(router *gin.RouterGroup) {
 	// Guarded auth
 	auth.GET("/profile", h.RequireAuth(), h.handleProfile)
 	auth.PATCH("/profile", h.RequireAuth(), h.handleUpdateProfile)
+	auth.PATCH("/password", h.RequireAuth(), h.handleChangePassword)
+	auth.GET("/settings", h.RequireAuth(), h.handleGetSettings)
+	auth.PATCH("/settings", h.RequireAuth(), h.handleUpdateSettings)
 	auth.GET("/sessions", h.RequireAuth(), h.handleSessions)
 }
 

@@ -10,6 +10,7 @@ import (
 	ar_handler "fairchild_be/internal/handlers/ar"
 	auth_handler "fairchild_be/internal/handlers/auth"
 	balance_handler "fairchild_be/internal/handlers/balance"
+	contact_handler "fairchild_be/internal/handlers/contact"
 	health_handler "fairchild_be/internal/handlers/health"
 	loans_handler "fairchild_be/internal/handlers/loans"
 	profile_handler "fairchild_be/internal/handlers/profile"
@@ -23,6 +24,7 @@ import (
 	ar_repo "fairchild_be/internal/repositories/ar"
 	auth_repo "fairchild_be/internal/repositories/auth"
 	balance_repo "fairchild_be/internal/repositories/balance"
+	contact_repo "fairchild_be/internal/repositories/contact"
 	health_repo "fairchild_be/internal/repositories/health"
 	loans_repo "fairchild_be/internal/repositories/loans"
 	profile_repo "fairchild_be/internal/repositories/profile"
@@ -34,6 +36,7 @@ import (
 	ar_service "fairchild_be/internal/services/ar"
 	auth_service "fairchild_be/internal/services/auth"
 	balance_service "fairchild_be/internal/services/balance"
+	contact_service "fairchild_be/internal/services/contact"
 	health_service "fairchild_be/internal/services/health"
 	loans_service "fairchild_be/internal/services/loans"
 	"fairchild_be/internal/services/mail"
@@ -137,6 +140,13 @@ func (s *APIServer) Run() {
 	healthService := health_service.NewHealthService(healthRepo)
 	healthHandler := health_handler.NewHandler(healthService)
 	healthHandler.RegisterRoutes(routes.RoutesGroup(), requireMemberAuth)
+
+	// contact: repo -> service -> handler - public marketing-page forms
+	// (Contact Us, "Get Notified" newsletter signup), no auth required.
+	contactRepo := contact_repo.NewContactRepository(s.mysqlDB)
+	contactService := contact_service.NewContactService(contactRepo)
+	contactHandler := contact_handler.NewHandler(contactService)
+	contactHandler.RegisterRoutes(routes.RoutesGroup())
 
 	// profile: repo -> service -> handler
 	profileRepo := profile_repo.NewProfileRepository(s.mysqlDB)

@@ -52,6 +52,10 @@ type User struct {
 	Gender               *string    `json:"gender,omitempty"`
 	MobileNumber         *string    `json:"mobile_number,omitempty"`
 	Location             *string    `json:"location,omitempty"`
+	// Address is the member-editable mailing address set via
+	// PATCH /auth/settings - distinct from the read-only legacy
+	// client-master address GET /profile returns, which has no write path.
+	Address              *string    `json:"address,omitempty"`
 	DisplayName          *string    `json:"display_name,omitempty"`
 	AvatarUrl            *string    `json:"avatar_url,omitempty"`
 	Status               UserStatus `json:"status"`

@@ -15,6 +15,11 @@ type AuthRepositoryInterface interface {
 	TouchLastLogin(ctx *gin.Context, userID int64) error
 	UpdateUserPassword(ctx *gin.Context, userID int64, passwordHash string) error
 	UpdateUserProfile(ctx *gin.Context, userID int64, firstName, lastName string, middleName *string, email, mobileNumber string) error
+	UpdateUserAddress(ctx *gin.Context, userID int64, address *string) error
+
+	// Notification Preferences
+	GetNotificationPreference(ctx *gin.Context, userID int64) (bool, error)
+	UpsertNotificationPreference(ctx *gin.Context, userID int64, enabled bool) error
 
 	// Social Accounts / Providers
 	FindProviderByCode(ctx *gin.Context, code string) (*models.AuthProvider, error)

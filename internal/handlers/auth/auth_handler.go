@@ -302,6 +302,89 @@ func (h *AuthHandler) handleUpdateProfile(ctx *gin.Context) {
 	})
 }
 
+// handleChangePassword is the self-service "change my password while
+// logged in" flow - distinct from handleForgotPassword's OTP-based reset.
+func (h *AuthHandler) handleChangePassword(ctx *gin.Context) {
+	userID, ok := userIDFromContext(ctx)
+	if !ok {
+		loggers.GetCommonError(ctx, cc.USER_NOT_FOUND, http.StatusUnauthorized)
+		return
+	}
+
+	var req models.ChangePasswordRequest
+	if !utils.ValidatePayload(ctx, &req) {
+		return
+	}
+
+	if err := h.authService.ChangePasswordService(ctx, userID, &req); err != nil {
+		if errors.Is(err, cc.ErrIncorrectPassword) {
+			loggers.GetCommonError(ctx, err.Error(), http.StatusUnauthorized)
+			return
+		}
+		if errors.Is(err, cc.ErrNoPasswordSet) {
+			loggers.GetCommonError(ctx, err.Error(), http.StatusConflict)
+			return
+		}
+		loggers.GetCommonError(ctx, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	loggers.SuccessResponse(ctx, cc.SUCCESS_PASSWORD_CHANGED)
+}
+
+// handleGetSettings returns the caller's own mailing address and
+// notification preference.
+func (h *AuthHandler) handleGetSettings(ctx *gin.Context) {
+	userID, ok := userIDFromContext(ctx)
+	if !ok {
+		loggers.GetCommonError(ctx, cc.USER_NOT_FOUND, http.StatusUnauthorized)
+		return
+	}
+
+	settings, err := h.authService.GetSettingsService(ctx, userID)
+	if err != nil {
+		loggers.GetCommonError(ctx, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	loggers.StatusOK(ctx, &common.SuccessResponse{
+		SuccessID:  uuid.NewString(),
+		Status:     cc.SUCCESS_SETTINGS_FETCHED,
+		HttpCode:   http.StatusOK,
+		ResponseAt: time.Now(),
+		Body:       settings,
+	})
+}
+
+// handleUpdateSettings overwrites the caller's own mailing address and
+// notification preference together - see UpdateSettingsRequest.
+func (h *AuthHandler) handleUpdateSettings(ctx *gin.Context) {
+	userID, ok := userIDFromContext(ctx)
+	if !ok {
+		loggers.GetCommonError(ctx, cc.USER_NOT_FOUND, http.StatusUnauthorized)
+		return
+	}
+
+	var req models.UpdateSettingsRequest
+	if !utils.ValidatePayload(ctx, &req) {
+		return
+	}
+
+	settings, err := h.authService.UpdateSettingsService(ctx, userID, &req)
+	if err != nil {
+		loggers.GetCommonError(ctx, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	loggers.StatusOK(ctx, &common.SuccessResponse{
+		SuccessID:  uuid.NewString(),
+		Status:     cc.SUCCESS_SETTINGS_UPDATED,
+		HttpCode:   http.StatusOK,
+		ResponseAt: time.Now(),
+		Body:       settings,
+	})
+}
+
 func (h *AuthHandler) handleProfile(ctx *gin.Context) {
 	userID, ok := userIDFromContext(ctx)
 	if !ok {

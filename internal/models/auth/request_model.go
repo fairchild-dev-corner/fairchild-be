@@ -25,6 +25,26 @@ type UpdateProfileRequest struct {
 	MobileNumber string `json:"mobile_number" validate:"required"`
 }
 
+// ChangePasswordRequest - PATCH /auth/password. Requires the caller's
+// current password (not just a valid access token) before overwriting it,
+// same defense-in-depth as most "change password while logged in" flows -
+// AuthService.ChangePasswordService rejects accounts with no password set
+// (social/SSO-only) via ErrNoPasswordSet.
+type ChangePasswordRequest struct {
+	CurrentPassword string `json:"current_password" validate:"required"`
+	NewPassword     string `json:"new_password" validate:"required,min=8"`
+}
+
+// UpdateSettingsRequest - PATCH /auth/settings. Address is the caller's own
+// member-editable mailing address on the `users` table, distinct from the
+// read-only legacy client-master address GET /profile returns (no write
+// path there - see UpdateProfileRequest). NotificationsEnabled is a single
+// on/off preference, not per-channel.
+type UpdateSettingsRequest struct {
+	Address              string `json:"address" validate:"omitempty,max=255"`
+	NotificationsEnabled bool   `json:"notifications_enabled"`
+}
+
 // RegisterRequest is for regular-member registration.
 // ReferenceID must belong to a "register"-purpose OTP challenge already
 // confirmed via VerifyOTPRequest (AuthService.VerifyRegisterOTPService), and

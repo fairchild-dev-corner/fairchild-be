@@ -109,7 +109,7 @@ func translateDuplicateUserError(err error) error {
 }
 
 const userSelectColumns = `u.id, u.uuid, u.email, u.username, c.password_hash,
-	u.first_name, u.middle_name, u.last_name, u.suffix, u.member_id, u.date_of_birth, u.gender, u.mobile_number, u.location,
+	u.first_name, u.middle_name, u.last_name, u.suffix, u.member_id, u.date_of_birth, u.gender, u.mobile_number, u.location, u.address,
 	u.display_name, u.avatar_url, u.status, u.member_type, u.guardian_full_name, u.guardian_mobile_number, u.guardian_consent_at,
 	u.email_verified_at, c.last_login_at, c.last_password_change_at, u.created_at, u.updated_at`
 
@@ -170,11 +170,55 @@ func (r *AuthRepository) TouchLastLogin(ctx *gin.Context, userID int64) error {
 }
 
 // UpdateUserPassword overwrites the account's password hash - used to issue
-// a temporary password once a forgot-password OTP challenge is verified.
+// a temporary password once a forgot-password OTP challenge is verified, and
+// by AuthService.ChangePasswordService for a self-service change.
 func (r *AuthRepository) UpdateUserPassword(ctx *gin.Context, userID int64, passwordHash string) error {
 	_, err := r.DB.ExecContext(ctx,
 		`UPDATE user_account_cred SET password_hash = ?, last_password_change_at = NOW() WHERE user_id = ?`,
 		passwordHash, userID)
+	return err
+}
+
+// UpdateUserAddress overwrites the caller's own member-editable mailing
+// address - a plain `users` column, distinct from the read-only legacy
+// client-master address GET /profile also returns (see UpdateUserProfile's
+// doc comment for why that one has no write path).
+func (r *AuthRepository) UpdateUserAddress(ctx *gin.Context, userID int64, address *string) error {
+	_, err := r.DB.ExecContext(ctx,
+		`UPDATE users SET address = ? WHERE id = ? AND deleted_at IS NULL`,
+		address, userID,
+	)
+	return err
+}
+
+// GetNotificationPreference returns whether the caller wants notifications,
+// defaulting to true (opted in) when no row exists yet in
+// user_notification_preferences - every account created before this
+// feature shipped falls into that case.
+func (r *AuthRepository) GetNotificationPreference(ctx *gin.Context, userID int64) (bool, error) {
+	var enabled bool
+	err := r.DB.QueryRowContext(ctx,
+		`SELECT notifications_enabled FROM user_notification_preferences WHERE user_id = ?`, userID,
+	).Scan(&enabled)
+
+	if errors.Is(err, sql.ErrNoRows) {
+		return true, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	return enabled, nil
+}
+
+// UpsertNotificationPreference creates the caller's preference row on first
+// save, or overwrites it on every save after - user_id is the table's own
+// primary key (1:1 with users), so this is a plain upsert.
+func (r *AuthRepository) UpsertNotificationPreference(ctx *gin.Context, userID int64, enabled bool) error {
+	_, err := r.DB.ExecContext(ctx,
+		`INSERT INTO user_notification_preferences (user_id, notifications_enabled) VALUES (?, ?)
+		 ON DUPLICATE KEY UPDATE notifications_enabled = VALUES(notifications_enabled)`,
+		userID, enabled,
+	)
 	return err
 }
 
@@ -184,7 +228,7 @@ func scanUser(row *sql.Row) (*models.User, error) {
 
 	err := row.Scan(
 		&u.ID, &u.UUID, &email, &u.Username, &u.PasswordHash,
-		&u.FirstName, &u.MiddleName, &u.LastName, &u.Suffix, &u.MemberID, &u.DateOfBirth, &u.Gender, &u.MobileNumber, &u.Location,
+		&u.FirstName, &u.MiddleName, &u.LastName, &u.Suffix, &u.MemberID, &u.DateOfBirth, &u.Gender, &u.MobileNumber, &u.Location, &u.Address,
 		&u.DisplayName, &u.AvatarUrl,
 		&u.Status, &u.MemberType, &u.GuardianFullName, &u.GuardianMobileNumber, &u.GuardianConsentAt,
 		&u.EmailVerifiedAt, &u.LastLoginAt, &u.LastPasswordChangeAt, &u.CreatedAt, &u.UpdatedAt,

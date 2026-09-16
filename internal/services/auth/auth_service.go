@@ -585,6 +585,71 @@ func (s *AuthService) UpdateProfileService(ctx *gin.Context, userID int64, req *
 	return user, nil
 }
 
+// ChangePasswordService is the self-service "change my password while
+// logged in" flow - distinct from the forgot-password OTP flow
+// (forgot_password_service.go), this requires the caller to prove they
+// already know the current password rather than a mobile OTP. A
+// social/SSO-only account (no PasswordHash) has nothing to verify against,
+// so it's rejected with ErrNoPasswordSet rather than silently setting one.
+func (s *AuthService) ChangePasswordService(ctx *gin.Context, userID int64, req *models.ChangePasswordRequest) error {
+	user, err := s.repo.FindUserByID(ctx, userID)
+	if err != nil {
+		return err
+	}
+	if user == nil {
+		return errors.New(cc.USER_NOT_FOUND)
+	}
+	if user.PasswordHash == nil {
+		return cc.ErrNoPasswordSet
+	}
+	if err := CheckPassword(*user.PasswordHash, req.CurrentPassword); err != nil {
+		return cc.ErrIncorrectPassword
+	}
+
+	hash, err := HashPassword(req.NewPassword)
+	if err != nil {
+		return err
+	}
+	return s.repo.UpdateUserPassword(ctx, userID, hash)
+}
+
+// GetSettingsService returns the caller's own mailing address and
+// notification preference - the pair PersonalInformationCard/OtherInformationCard
+// don't already cover (both come from the legacy client master, read-only).
+func (s *AuthService) GetSettingsService(ctx *gin.Context, userID int64) (*models.SettingsResponse, error) {
+	user, err := s.repo.FindUserByID(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	if user == nil {
+		return nil, errors.New(cc.USER_NOT_FOUND)
+	}
+
+	enabled, err := s.repo.GetNotificationPreference(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	return &models.SettingsResponse{Address: user.Address, NotificationsEnabled: enabled}, nil
+}
+
+// UpdateSettingsService overwrites the caller's own mailing address and
+// notification preference together - see UpdateSettingsRequest for why
+// these two (not identity fields like name/email/mobile, which stay on
+// UpdateProfileService) are grouped here.
+func (s *AuthService) UpdateSettingsService(ctx *gin.Context, userID int64, req *models.UpdateSettingsRequest) (*models.SettingsResponse, error) {
+	address := nullIfEmptyStr(req.Address)
+
+	if err := s.repo.UpdateUserAddress(ctx, userID, address); err != nil {
+		return nil, err
+	}
+	if err := s.repo.UpsertNotificationPreference(ctx, userID, req.NotificationsEnabled); err != nil {
+		return nil, err
+	}
+
+	return &models.SettingsResponse{Address: address, NotificationsEnabled: req.NotificationsEnabled}, nil
+}
+
 func (s *AuthService) MeService(ctx *gin.Context, userID int64) (*models.User, error) {
 	user, err := s.repo.FindUserByID(ctx, userID)
 	if err != nil {

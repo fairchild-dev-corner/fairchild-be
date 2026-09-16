@@ -10,6 +10,9 @@ const (
 	SUCCESS_OTP_SENT         = "otp sent successfully"
 	SUCCESS_SESSIONS_FETCHED = "sessions fetched successfully"
 	SUCCESS_PROFILE_UPDATED  = "profile updated successfully"
+	SUCCESS_PASSWORD_CHANGED = "password changed successfully"
+	SUCCESS_SETTINGS_FETCHED = "settings fetched successfully"
+	SUCCESS_SETTINGS_UPDATED = "settings updated successfully"
 
 	// Registration
 	SUCCESS_REGISTER_OTP_SENT     = "registration otp sent successfully"
@@ -26,6 +29,10 @@ const (
 
 	// Account Claim Requests
 	SUCCESS_CLAIM_REQUEST_SUBMITTED = "your request has been submitted for review"
+
+	// Contact
+	SUCCESS_CONTACT_MESSAGE_SUBMITTED = "your message has been sent, we'll get back to you soon"
+	SUCCESS_NEWSLETTER_SUBSCRIBED     = "you're subscribed, we'll notify you when we launch"
 
 	// Transactions
 	SUCCESS_LAST_TRANSACTIONS_FETCHED = "last transactions fetched successfully"
