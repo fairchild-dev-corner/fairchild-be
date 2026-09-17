@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"errors"
-	"fmt"
 	"log/slog"
 	"net/http"
 	"net/url"
@@ -54,10 +53,10 @@ func (h *SSOHandler) handleSSOBegin(ctx *gin.Context) {
 }
 
 // handleSSOCallback completes the OAuth2 exchange, looks up the local member
-// the verified identity belongs to, and redirects back to the frontend with
-// the issued access token in the URL fragment - fragments are never sent to
-// the server or logged, unlike a query string, which matters since this app
-// has no cookie-based auth to fall back on for it.
+// the verified identity belongs to, sets the refresh token as an HttpOnly
+// cookie, and redirects straight to /member/dashboard - no token is passed
+// via the URL, the dashboard establishes its session by calling
+// POST /auth/refresh on mount.
 func (h *SSOHandler) handleSSOCallback(ctx *gin.Context) {
 	ctx.Request = gothic.GetContextWithProvider(ctx.Request, ctx.Param("provider"))
 
@@ -86,21 +85,13 @@ func (h *SSOHandler) handleSSOCallback(ctx *gin.Context) {
 		return
 	}
 
+	// The refresh token was just set as an HttpOnly cookie above, so the
+	// dashboard doesn't need anything passed via the URL - it establishes
+	// the session by calling POST /auth/refresh on mount, which reads that
+	// cookie and issues an access token.
 	setRefreshTokenCookie(ctx, h.buildEnv, res.RefreshToken, h.authService.RefreshTokenTTL())
 
-	// h.frontendURL (SSO_FRONTEND_REDIRECT_URL) already points at the
-	// /sso/complete landing page itself, not the site root - it must not
-	// have another path appended here. Only the access token travels in the
-	// fragment; the refresh token was just set as an HttpOnly cookie above
-	// and must never be JS-readable. sso/complete.tsx is what navigates on
-	// to /member/dashboard, once it has actually established the session.
-	target := fmt.Sprintf("%s#access_token=%s&token_type=%s&expires_in=%d",
-		h.frontendURL,
-		url.QueryEscape(res.AccessToken),
-		url.QueryEscape(res.TokenType),
-		res.ExpiresIn,
-	)
-	ctx.Redirect(http.StatusTemporaryRedirect, target)
+	ctx.Redirect(http.StatusTemporaryRedirect, h.frontendURL+"/member/dashboard")
 }
 
 func (h *SSOHandler) redirectWithError(ctx *gin.Context, reason string) {

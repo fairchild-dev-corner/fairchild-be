@@ -67,6 +67,7 @@ func (s *AuthService) SendRegisterOTPService(ctx *gin.Context, req *models.SendR
 		return nil, fmt.Errorf("%w: %v", cc.ErrFailedToSendOTP, sendErr)
 	}
 	_ = s.repo.MarkOTPSent(ctx, id)
+	slog.Info("sent registration OTP SMS", "otp_verification_id", id, "mobile_number", maskMobileNumber(mobileNumber))
 
 	// Email is optional here (Young Saver's guardian doesn't supply one, and
 	// a regular member's own email is collected but not required to be
@@ -84,7 +85,9 @@ func (s *AuthService) SendRegisterOTPService(ctx *gin.Context, req *models.SendR
 			go func() {
 				if sendErr := s.mailSender.Send(bgCtx, req.Email, mail.OTPVerificationSubject, emailBody); sendErr != nil {
 					slog.Warn("failed to send registration OTP email", "error", sendErr)
+					return
 				}
+				slog.Info("sent registration OTP email")
 			}()
 		}
 	}

@@ -86,6 +86,7 @@ func (s *AuthService) ForgotPasswordService(ctx *gin.Context, req *models.Forgot
 		return nil, fmt.Errorf("%w: %v", cc.ErrFailedToSendOTP, sendErr)
 	}
 	_ = s.repo.MarkOTPSent(ctx, id)
+	slog.Info("sent forgot-password OTP SMS", "user_id", user.ID, "otp_verification_id", id, "mobile_number", maskMobileNumber(mobileNumber))
 
 	// Email is a secondary delivery channel alongside SMS - SMS above is what
 	// gates the challenge as usable (status='sent'), so any failure here
@@ -105,7 +106,9 @@ func (s *AuthService) ForgotPasswordService(ctx *gin.Context, req *models.Forgot
 		go func() {
 			if sendErr := s.mailSender.Send(bgCtx, user.Email, mail.OTPVerificationSubject, emailBody); sendErr != nil {
 				slog.Warn("failed to send forgot-password OTP email", "user_id", user.ID, "error", sendErr)
+				return
 			}
+			slog.Info("sent forgot-password OTP email", "user_id", user.ID)
 		}()
 	}
 
