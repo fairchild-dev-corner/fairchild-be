@@ -235,8 +235,18 @@ func (s *AuthService) createAndSendLoginOTP(ctx *gin.Context, user *models.User)
 	} else if emailBody, renderErr := mail.RenderOTPVerificationEmail(code, int(otpExpiry.Minutes())); renderErr != nil {
 		slog.Warn("failed to render login OTP email", "user_id", user.ID, "error", renderErr)
 
-	} else if sendErr := s.mailSender.Send(ctx, user.Email, mail.OTPVerificationSubject, emailBody); sendErr != nil {
-		slog.Warn("failed to send login OTP email", "user_id", user.ID, "error", sendErr)
+	} else {
+		// Sent in the background - net/smtp has no dial timeout, so a slow or
+		// unreachable mail server must not add its own latency on top of an
+		// SMS that already succeeded. ctx.Copy() (not ctx) because this
+		// outlives the request: it's detached from cancellation, and safe to
+		// use after Gin recycles ctx back into its context pool.
+		bgCtx := ctx.Copy()
+		go func() {
+			if sendErr := s.mailSender.Send(bgCtx, user.Email, mail.OTPVerificationSubject, emailBody); sendErr != nil {
+				slog.Warn("failed to send login OTP email", "user_id", user.ID, "error", sendErr)
+			}
+		}()
 	}
 
 	return &models.LoginOTPChallengeResponse{
@@ -405,11 +415,16 @@ func (s *AuthService) lockMemberAccount(ctx *gin.Context, identifier, ip string,
 		slog.Warn("failed to render account-lock email", "user_id", user.ID, "error", renderErr)
 		return
 	}
-	if sendErr := s.mailSender.Send(ctx, user.Email, mail.AccountLockedSubject, emailBody); sendErr != nil {
-		slog.Warn("failed to send account-lock email", "user_id", user.ID, "error", sendErr)
-		return
-	}
-	_ = s.repo.MarkLockedMemberAccountNotified(ctx, id)
+	bgCtx := ctx.Copy()
+	go func() {
+		if sendErr := s.mailSender.Send(bgCtx, user.Email, mail.AccountLockedSubject, emailBody); sendErr != nil {
+			slog.Warn("failed to send account-lock email", "user_id", user.ID, "error", sendErr)
+			return
+		}
+		if err := s.repo.MarkLockedMemberAccountNotified(bgCtx, id); err != nil {
+			slog.Warn("failed to mark account-lock notified", "user_id", user.ID, "lock_id", id, "error", err)
+		}
+	}()
 }
 
 func (s *AuthService) SocialLoginService(ctx *gin.Context, req *models.SocialLoginRequest) (*models.AuthTokenResponse, error) {

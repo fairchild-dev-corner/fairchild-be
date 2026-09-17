@@ -98,8 +98,15 @@ func (s *AuthService) ForgotPasswordService(ctx *gin.Context, req *models.Forgot
 	} else if emailBody, renderErr := mail.RenderOTPVerificationEmail(code, int(forgotPasswordOTPExpiry.Minutes())); renderErr != nil {
 		slog.Warn("failed to render forgot-password OTP email", "user_id", user.ID, "error", renderErr)
 
-	} else if sendErr := s.mailSender.Send(ctx, user.Email, mail.OTPVerificationSubject, emailBody); sendErr != nil {
-		slog.Warn("failed to send forgot-password OTP email", "user_id", user.ID, "error", sendErr)
+	} else {
+		// Backgrounded for the same reason as the login OTP email - see
+		// createAndSendLoginOTP in auth_service.go.
+		bgCtx := ctx.Copy()
+		go func() {
+			if sendErr := s.mailSender.Send(bgCtx, user.Email, mail.OTPVerificationSubject, emailBody); sendErr != nil {
+				slog.Warn("failed to send forgot-password OTP email", "user_id", user.ID, "error", sendErr)
+			}
+		}()
 	}
 
 	return &models.ForgotPasswordOTPChallengeResponse{

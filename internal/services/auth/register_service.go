@@ -77,8 +77,15 @@ func (s *AuthService) SendRegisterOTPService(ctx *gin.Context, req *models.SendR
 			slog.Warn("skipping registration OTP email: invalid email", "error", err)
 		} else if emailBody, renderErr := mail.RenderOTPVerificationEmail(code, int(otpExpiry.Minutes())); renderErr != nil {
 			slog.Warn("failed to render registration OTP email", "error", renderErr)
-		} else if sendErr := s.mailSender.Send(ctx, req.Email, mail.OTPVerificationSubject, emailBody); sendErr != nil {
-			slog.Warn("failed to send registration OTP email", "error", sendErr)
+		} else {
+			// Backgrounded for the same reason as the login OTP email - see
+			// createAndSendLoginOTP in auth_service.go.
+			bgCtx := ctx.Copy()
+			go func() {
+				if sendErr := s.mailSender.Send(bgCtx, req.Email, mail.OTPVerificationSubject, emailBody); sendErr != nil {
+					slog.Warn("failed to send registration OTP email", "error", sendErr)
+				}
+			}()
 		}
 	}
 
